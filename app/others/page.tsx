@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useUser } from "@clerk/nextjs";
 
 // How to improve the SEO here?
 // import { Metadata } from "next";
@@ -22,10 +23,9 @@ import { Input } from "@/components/ui/input";
 //     title: "Contact Form | PlanWed",
 //     description: "OneStop for the Memories!",
 //   };
-  
-
 
 const ContactForm = () => {
+  const { user } = useUser();
   const formSchema = z.object({
     username: z
       .string()
@@ -50,12 +50,36 @@ const ContactForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    console.log(values);
-    alert("Your form has been submitted!")
-  }
+    try {
+      console.log(values);
+      console.log(values.username);
+
+      alert("Your form has been submitted!");
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: process.env.NEXT_PUBLIC_WEB3_KEY,
+          name: user?.primaryEmailAddress?.emailAddress || values.username ,
+          subject: values.subject,
+          message: values.message,
+        }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        console.log(result);
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
   return (
     <div>
       <div className="text-3xl text-center pt-3">Contact Form</div>
